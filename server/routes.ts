@@ -3739,13 +3739,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           if (messageText) {
-            console.log('✅ Message content found, proceeding with AI processing...');
-            // Find company by instance name
-            console.log('🔍 Searching for instance:', instanceName);
-            const whatsappInstance = await storage.getWhatsappInstanceByName(instanceName);
+            console.log('✅ Message content found, waiting 15 seconds before AI processing...');
+
+            // Return immediate response to webhook to avoid timeout
+            res.status(200).json({ received: true, processed: true, delayed: true });
+
+            // Process message after 15 seconds delay
+            setTimeout(async () => {
+              console.log('⏰ 15 seconds elapsed, proceeding with AI processing...');
+              // Find company by instance name
+              console.log('🔍 Searching for instance:', instanceName);
+              const whatsappInstance = await storage.getWhatsappInstanceByName(instanceName);
             if (!whatsappInstance) {
               console.log(`❌ WhatsApp instance ${instanceName} not found`);
-              return res.status(404).json({ error: 'Instance not found' });
+              return; // Return from setTimeout, not from the outer function
             }
             console.log('✅ Found instance:', whatsappInstance.id);
 
@@ -4407,6 +4414,10 @@ Obrigado pela preferência! 🙏`;
                 console.error('❌ Error sending fallback message:', sendError);
               }
             }
+            }, 15000); // 15 seconds delay before processing
+
+            // Return to prevent further execution and duplicate responses
+            return;
           }
         }
       
